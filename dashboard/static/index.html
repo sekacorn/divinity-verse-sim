@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Divinity Sim</title>
+  <style>
+    :root {
+      --bg: #0d0d14;
+      --panel: #171722;
+      --text: #f3ead2;
+      --muted: #b7ab8c;
+      --gold: #c9a84c;
+      --purple: #6b4fa0;
+      --green: #4c9a61;
+      --red: #a64d52;
+      --yellow: #b99647;
+      --border: rgba(201, 168, 76, 0.2);
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+      --mono: "Cascadia Code", Consolas, monospace;
+      --sans: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(107, 79, 160, 0.18), transparent 30%),
+        linear-gradient(180deg, #12111a 0%, var(--bg) 100%);
+    }
+    .shell { max-width: 1480px; margin: 0 auto; padding: 18px; display: grid; gap: 16px; }
+    .header, .footer, .panel {
+      border: 1px solid var(--border);
+      background: rgba(23, 23, 34, 0.92);
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+      border-radius: 18px;
+    }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; }
+    .brand { font-weight: 700; letter-spacing: 0.08em; color: var(--gold); font-size: 1.35rem; }
+    .world-meta { text-align: right; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: 1.15fr 1.45fr 1fr; gap: 16px; min-height: 68vh; }
+    .panel { padding: 16px; overflow: hidden; }
+    .panel h2 { margin: 0 0 14px; font-size: 0.95rem; letter-spacing: 0.08em; color: var(--gold); }
+    .mortal-list, .pantheon-list { display: flex; flex-direction: column; gap: 12px; max-height: calc(68vh - 48px); overflow: auto; padding-right: 6px; }
+    .mortal-card, .deity-item {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.14));
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 14px;
+      cursor: pointer;
+    }
+    .mortal-card.selected, .deity-item.active { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(201, 168, 76, 0.25); }
+    .title-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .badge { padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; background: rgba(107, 79, 160, 0.22); color: #dfd2ff; text-transform: capitalize; }
+    .location { color: var(--muted); font-style: italic; margin-bottom: 12px; }
+    .need { margin-bottom: 8px; font-size: 0.78rem; }
+    .need-bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 4px; }
+    .need-bar span { display: block; height: 100%; border-radius: inherit; }
+    .feed {
+      height: calc(68vh - 48px);
+      overflow: auto;
+      background: rgba(0,0,0,0.18);
+      border-radius: 14px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    .feed-line { margin-bottom: 8px; white-space: pre-wrap; }
+    .feed-line.action { color: #f3ead2; }
+    .feed-line.divine_act { color: var(--gold); }
+    .feed-line.death { color: #f08f95; }
+    .feed-line.birth { color: #8fd8a0; }
+    .feed-line.decree { color: #c7b0ff; }
+    .deity-focus {
+      border: 1px solid rgba(107, 79, 160, 0.35);
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(107,79,160,0.18), rgba(0,0,0,0.08));
+      margin-bottom: 14px;
+    }
+    .energy-bar { width: 100%; height: 12px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-top: 10px; }
+    .energy-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); transition: width 0.35s ease; }
+    .actions { display: grid; gap: 10px; margin-bottom: 14px; }
+    button, input, select {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      padding: 10px 12px;
+      font: inherit;
+    }
+    button { cursor: pointer; text-align: left; }
+    button[data-tone="danger"] { border-color: rgba(166,77,82,0.45); color: #ffced2; }
+    button[data-tone="good"] { border-color: rgba(76,154,97,0.45); color: #c9ffd5; }
+    button[data-tone="arcane"] { border-color: rgba(107,79,160,0.45); color: #e0d2ff; }
+    .inline-form { display: none; gap: 8px; margin-top: 6px; }
+    .inline-form.open { display: grid; }
+    .footer { display: flex; gap: 12px; flex-wrap: wrap; padding: 14px; }
+    .toast-wrap { position: fixed; top: 18px; right: 18px; display: grid; gap: 10px; z-index: 20; }
+    .toast { background: rgba(166,77,82,0.94); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
+    .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 6, 10, 0.5); backdrop-filter: blur(8px); z-index: 15; }
+    .modal.open { display: flex; }
+    .modal-card {
+      width: min(860px, 92vw);
+      max-height: 82vh;
+      overflow: auto;
+      padding: 20px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: rgba(18, 17, 26, 0.98);
+      box-shadow: var(--shadow);
+    }
+    .lore-item { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: var(--mono); }
+    @media (max-width: 1080px) {
+      .grid { grid-template-columns: 1fr; }
+      .mortal-list, .pantheon-list, .feed { max-height: none; height: 320px; }
+      .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .world-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-wrap" id="toasts"></div>
+  <div class="modal" id="loreModal">
+    <div class="modal-card" id="loreCard">
+      <h2>Chronicle</h2>
+      <div id="loreList"></div>
+    </div>
+  </div>
+  <main class="shell">
+    <section class="header">
+      <div class="brand">&#9889; DIVINITY SIM</div>
+      <div class="world-meta">
+        <div id="worldName">Loading world...</div>
+        <div id="worldClock">Waiting for time...</div>
+      </div>
+    </section>
+    <section class="grid">
+      <section class="panel">
+        <h2>MORTALS</h2>
+        <div class="mortal-list" id="mortalList"></div>
+      </section>
+      <section class="panel">
+        <h2>LIVE FEED</h2>
+        <div class="feed" id="feed"></div>
+      </section>
+      <section class="panel">
+        <h2>DEITY PANEL</h2>
+        <div class="deity-focus">
+          <div id="activeDeityName">No deity selected</div>
+          <div id="activeDeityMeta" class="location"></div>
+          <div class="energy-bar"><span id="energyBar" style="width:0%"></span></div>
+        </div>
+        <div class="actions">
+          <button data-action="smite" data-tone="danger">Smite (20)</button>
+          <button data-action="bless" data-tone="good">Bless (15)</button>
+          <div class="inline-form" id="blessForm">
+            <input id="blessMessage" placeholder="Gift or blessing message">
+            <button data-submit="bless">Send Blessing</button>
+          </div>
+          <button data-action="curse" data-tone="danger">Curse (20)</button>
+          <button data-action="inspire" data-tone="good">Inspire (10)</button>
+          <button data-action="decree" data-tone="arcane">Decree (10)</button>
+          <div class="inline-form" id="decreeForm">
+            <input id="decreeMessage" placeholder="Decree to the world">
+            <button data-submit="decree">Issue Decree</button>
+          </div>
+          <button data-action="spawn">Spawn (25)</button>
+          <div class="inline-form" id="spawnForm">
+            <select id="spawnArchetype"></select>
+            <button data-submit="spawn">Create Mortal</button>
+          </div>
+        </div>
+        <h2>PANTHEON</h2>
+        <div class="pantheon-list" id="pantheonList"></div>
+      </section>
+    </section>
+    <section class="footer">
+      <button id="tickOne">Tick +1</button>
+      <button id="tickFive">Tick +5</button>
+      <button id="observeBtn">Observe</button>
+      <button id="loreBtn">Lore</button>
+    </section>
+  </main>
+  <script>
+    const state = { world: null, mortals: [], deities: [], activeDeity: null, selectedMortal: null, source: null };
+    const archetypes = ["farmer", "merchant", "scholar", "guard", "wanderer", "priest", "blacksmith", "thief"];
+    const els = {
+      worldName: document.getElementById('worldName'),
+      worldClock: document.getElementById('worldClock'),
+      mortalList: document.getElementById('mortalList'),
+      pantheonList: document.getElementById('pantheonList'),
+      activeDeityName: document.getElementById('activeDeityName'),
+      activeDeityMeta: document.getElementById('activeDeityMeta'),
+      energyBar: document.getElementById('energyBar'),
+      feed: document.getElementById('feed'),
+      toasts: document.getElementById('toasts'),
+      loreModal: document.getElementById('loreModal'),
+      loreList: document.getElementById('loreList'),
+      blessForm: document.getElementById('blessForm'),
+      decreeForm: document.getElementById('decreeForm'),
+      spawnForm: document.getElementById('spawnForm'),
+      blessMessage: document.getElementById('blessMessage'),
+      decreeMessage: document.getElementById('decreeMessage'),
+      spawnArchetype: document.getElementById('spawnArchetype')
+    };
+
+    function toast(message) {
+      const div = document.createElement('div');
+      div.className = 'toast';
+      div.textContent = message;
+      els.toasts.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
+      if (!response.ok) {
+        let detail = 'Request failed';
+        try {
+          const body = await response.json();
+          detail = body.detail || JSON.stringify(body);
+        } catch (_) {}
+        throw new Error(detail);
+      }
+      return response.json();
+    }
+
+    function needColor(value) {
+      if (value > 60) return 'var(--green)';
+      if (value > 30) return 'var(--yellow)';
+      return 'var(--red)';
+    }
+
+    function renderWorld() {
+      if (!state.world) return;
+      els.worldName.textContent = state.world.world_name;
+      els.worldClock.textContent = `${state.world.clock} - Tick ${state.world.tick}`;
+    }
+
+    function renderMortals() {
+      els.mortalList.innerHTML = '';
+      state.mortals.forEach(mortal => {
+        const card = document.createElement('button');
+        card.className = `mortal-card${state.selectedMortal === mortal.name ? ' selected' : ''}`;
+        card.innerHTML = `
+          <div class="title-row"><strong>${mortal.name}</strong><span class="badge">${mortal.archetype}</span></div>
+          <div class="location">${mortal.location}</div>
+          ${['hunger', 'rest', 'purpose'].map(key => `
+            <div class="need">
+              ${key[0].toUpperCase() + key.slice(1)}: ${mortal.needs[key]}
+              <div class="need-bar"><span style="width:${mortal.needs[key]}%; background:${needColor(mortal.needs[key])}"></span></div>
+            </div>`).join('')}
+        `;
+        card.onclick = () => {
+          state.selectedMortal = mortal.name;
+          renderMortals();
+        };
+        els.mortalList.appendChild(card);
+      });
+    }
+
+    function renderActiveDeity() {
+      if (!state.activeDeity) return;
+      els.activeDeityName.textContent = state.activeDeity.name;
+      els.activeDeityMeta.textContent = `${state.activeDeity.title} - ${state.activeDeity.domain}`;
+      const pct = Math.max(0, Math.min(100, (state.activeDeity.divine_energy / state.activeDeity.max_energy) * 100));
+      els.energyBar.style.width = `${pct}%`;
+    }
+
+    function renderDeities() {
+      els.pantheonList.innerHTML = '';
+      state.deities.forEach(deity => {
+        const item = document.createElement('button');
+        item.className = `deity-item${state.activeDeity && state.activeDeity.name === deity.name ? ' active' : ''}`;
+        item.innerHTML = `
+          <div class="title-row"><strong>${deity.name}</strong><span class="badge">${deity.domain}</span></div>
+          <div class="location">${deity.title}</div>
+          <div>Energy: ${deity.divine_energy}/${deity.max_energy}</div>
+        `;
+        item.onclick = () => {
+          state.activeDeity = deity;
+          renderDeities();
+          renderActiveDeity();
+        };
+        els.pantheonList.appendChild(item);
+      });
+      if (!state.activeDeity && state.deities.length) {
+        state.activeDeity = state.deities[0];
+        renderActiveDeity();
+      }
+    }
+
+    function addFeedLine(type, tick, text) {
+      const div = document.createElement('div');
+      div.className = `feed-line ${type}`;
+      div.textContent = `[Tick ${tick}] ${text}`;
+      els.feed.appendChild(div);
+      els.feed.scrollTop = els.feed.scrollHeight;
+    }
+
+    async function refreshWorld() {
+      state.world = await api('/api/world');
+      renderWorld();
+    }
+
+    async function refreshMortals() {
+      state.mortals = await api('/api/mortals');
+      if (state.selectedMortal && !state.mortals.some(m => m.name === state.selectedMortal)) {
+        state.selectedMortal = null;
+      }
+      renderMortals();
+    }
+
+    async function refreshDeities() {
+      state.deities = await api('/api/deities');
+      if (state.activeDeity) {
+        state.activeDeity = state.deities.find(d => d.name === state.activeDeity.name) || state.deities[0] || null;
+      }
+      renderDeities();
+      renderActiveDeity();
+    }
+
+    async function doTick(n) {
+      try {
+        await api('/api/tick', { method: 'POST', body: JSON.stringify({ n }) });
+        await Promise.all([refreshWorld(), refreshMortals(), refreshDeities()]);
+      } catch (error) {
+        toast(error.message);
+      }
+    }
+
+    function toggleForm(form) {
+      [els.blessForm, els.decreeForm, els.spawnForm].forEach(el => {
+        if (el !== form) el.classList.remove('open');
+      });
+      if (form) form.classList.toggle('open');
+    }
+
+    async function divineAction(action, target = '', message = '') {
+      if (!state.activeDeity) return toast('Select a deity first.');
+      try {
+        await api('/api/action', {
+          method: 'POST',
+          body: JSON.stringify({ deity: state.activeDeity.name, action, target, message })
+        });
+        await Promise.all([refreshMortals(), refreshDeities()]);
+        toggleForm(null);
+      } catch (error) {
+        toast(error.message);
+      }
+    }
+
+    async function showLore() {
+      try {
+        const lore = await api('/api/lore');
+        els.loreList.innerHTML = lore.map(item => `<div class="lore-item">[Tick ${item.tick}] <strong>${item.source_name}</strong>: ${item.description}</div>`).join('');
+        els.loreModal.classList.add('open');
+      } catch (error) {
+        toast(error.message);
+      }
+    }
+
+    function connectStream() {
+      if (state.source) state.source.close();
+      state.source = new EventSource('/api/stream');
+      state.source.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'tick') {
+          await refreshWorld();
+          await refreshMortals();
+          await refreshDeities();
+          return;
+        }
+        const tone = data.action === 'smite' ? 'death' : data.action === 'spawn' ? 'birth' : data.action === 'decree' ? 'decree' : (data.type === 'action' ? 'action' : 'divine_act');
+        addFeedLine(tone, data.tick || 0, data.text || '');
+      };
+      state.source.onerror = () => {
+        state.source.close();
+        setTimeout(connectStream, 2000);
+      };
+    }
+
+    document.querySelectorAll('[data-action]').forEach(button => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.action;
+        if (action === 'bless') return toggleForm(els.blessForm);
+        if (action === 'decree') return toggleForm(els.decreeForm);
+        if (action === 'spawn') return toggleForm(els.spawnForm);
+        if (!state.selectedMortal) return toast('Select a mortal first.');
+        divineAction(action, state.selectedMortal);
+      });
+    });
+
+    document.querySelector('[data-submit="bless"]').addEventListener('click', () => {
+      if (!state.selectedMortal) return toast('Select a mortal first.');
+      divineAction('bless', state.selectedMortal, els.blessMessage.value.trim());
+      els.blessMessage.value = '';
+    });
+    document.querySelector('[data-submit="decree"]').addEventListener('click', () => {
+      divineAction('decree', '', els.decreeMessage.value.trim());
+      els.decreeMessage.value = '';
+    });
+    document.querySelector('[data-submit="spawn"]').addEventListener('click', () => {
+      divineAction('spawn', els.spawnArchetype.value, '');
+    });
+    document.getElementById('tickOne').addEventListener('click', () => doTick(1));
+    document.getElementById('tickFive').addEventListener('click', () => doTick(5));
+    document.getElementById('observeBtn').addEventListener('click', () => refreshMortals().catch(err => toast(err.message)));
+    document.getElementById('loreBtn').addEventListener('click', showLore);
+    els.loreModal.addEventListener('click', (event) => { if (event.target === els.loreModal) els.loreModal.classList.remove('open'); });
+    els.spawnArchetype.innerHTML = archetypes.map(name => `<option value="${name}">${name}</option>`).join('');
+
+    async function init() {
+      try {
+        await Promise.all([refreshWorld(), refreshMortals(), refreshDeities()]);
+        connectStream();
+      } catch (error) {
+        toast(error.message);
+      }
+    }
+    init();
+  </script>
+</body>
+</html>
