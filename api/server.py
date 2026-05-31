@@ -35,6 +35,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost",
         "http://127.0.0.1",
+        "http://localhost:5173",
+        "http://localhost:5174",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ],
@@ -66,11 +68,22 @@ def require_runtime() -> SimulationRuntime:
 @app.get("/api/world")
 def get_world():
     rt = require_runtime()
+    living = rt.world.get_all_mortals(alive_only=True)
+    deity = rt.active_deity
+    if living:
+        all_needs = [v for m in living for v in m["needs"].values()]
+        stability = round(sum(all_needs) / len(all_needs), 1)
+    else:
+        stability = 0.0
+    faith = round((deity.divine_energy / max(deity.max_energy, 1)) * 100, 1)
     return {
         "world_name": rt.world.get_prop("world_name", "Evershade"),
         "current_era": rt.world.get_prop("current_era", "Age of Embers"),
         "clock": str(rt.clock),
         "tick": rt.clock.tick,
+        "stability": stability,
+        "faith": faith,
+        "mortal_count": len(living),
     }
 
 

@@ -1,0 +1,71 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --surface: #111318;
+  --surface-container: #1e2024;
+  --surface-container-lowest: #0c0e12;
+  --surface-container-highest: #333539;
+  --on-surface: #e2e2e8;
+  --on-surface-variant: #bdc8cf;
+  --outline: #889299;
+  --outline-variant: #3e484e;
+  --primary: #a7e0ff;
+  --primary-container: #5ac8fa;
+  --primary-fixed-dim: #74d1ff;
+  --primary-fixed: #c1e8ff;
+  --secondary: #ffb4aa;
+  --secondary-container: #c5020b;
+  --tertiary: #ffd44f;
+  --glass-stroke: rgba(255, 255, 255, 0.12);
+  --background: #111318;
+}
+
+html { color-scheme: dark; }
+
+body {
+  background-color: #0A0C10;
+  color: var(--on-surface);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 24px;
+  line-height: 1;
+  user-select: none;
+}
+
+.glass-panel {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-stroke);
+}
+
+.glass-panel:hover {
+  border-color: rgba(116, 209, 255, 0.4);
+  transition: border-color 0.3s ease-out;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.terminal-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 2px;
+  background: #ffd44f;
+  animation: blink 1s infinite;
+  vertical-align: bottom;
+  margin-left: 2px;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }

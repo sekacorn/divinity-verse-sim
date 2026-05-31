@@ -25,3 +25,13 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+
+# Design source (Stitch export — not part of the repo)
+stitch_divinity_verse_simulator/
+
+# Frontend build / deps
+dashboard/frontend/node_modules/
+dashboard/static/
+
+# Claude Code local config
+mortals/.claude/
