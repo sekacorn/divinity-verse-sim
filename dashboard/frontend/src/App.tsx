@@ -1,10 +1,23 @@
+import { useState } from 'react'
 import { useSimulation } from './useSimulation'
-import { Header } from './components/Header'
+import { Header, Tab } from './components/Header'
 import { MortalsPanel } from './components/MortalsPanel'
 import { ActionGrid } from './components/ActionGrid'
 import { ChroniclePanel } from './components/ChroniclePanel'
+import { DashboardView } from './components/DashboardView'
+import { MortalsView } from './components/MortalsView'
+import { PantheonView } from './components/PantheonView'
+
+const TAB_ICONS: Record<Tab, string> = {
+  Dashboard: 'dashboard',
+  Mortals:   'group',
+  Command:   'terminal',
+  Pantheon:  'account_balance',
+}
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<Tab>('Command')
+
   const {
     world, mortals, deities, feed,
     activeDeity, selectedMortal,
@@ -14,13 +27,18 @@ export default function App() {
   } = useSimulation()
 
   const essence = activeDeity?.divine_energy ?? 0
-
   const handleDecree = (text: string) => divineAction('decree', '', text)
 
   return (
     <>
-      <Header world={world} essence={essence} />
+      <Header
+        world={world}
+        essence={essence}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
+      {/* Error toast */}
       {error && (
         <div style={{
           position: 'fixed', top: '80px', right: '18px', zIndex: 100,
@@ -37,41 +55,60 @@ export default function App() {
         </div>
       )}
 
-      <main style={{
-        marginTop: '64px',
-        padding: '1rem',
-        display: 'grid',
-        gridTemplateColumns: '3fr 6fr 3fr',
-        gap: '1rem',
-        height: 'calc(100vh - 64px)',
-        overflow: 'hidden',
-      }}>
-        <MortalsPanel
-          mortals={mortals}
-          selected={selectedMortal}
-          stability={world?.stability ?? 80}
-          faith={world?.faith ?? 60}
-          onSelect={setSelectedMortal}
-        />
+      {/* Main content area */}
+      <div style={{ marginTop: '64px', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
 
-        <ActionGrid
-          selectedMortal={selectedMortal}
-          activeDeity={activeDeity}
-          mortals={mortals}
-          onAction={divineAction}
-          onTick={doTick}
-          loading={loading}
-          onError={setError}
-        />
+        {/* Dashboard tab */}
+        {activeTab === 'Dashboard' && (
+          <DashboardView world={world} mortals={mortals} deities={deities} feed={feed} />
+        )}
 
-        <ChroniclePanel
-          feed={feed}
-          deities={deities}
-          activeDeity={activeDeity}
-          onSelectDeity={setActiveDeity}
-          onDecree={handleDecree}
-        />
-      </main>
+        {/* Mortals tab */}
+        {activeTab === 'Mortals' && (
+          <MortalsView mortals={mortals} selected={selectedMortal} onSelect={setSelectedMortal} />
+        )}
+
+        {/* Command tab — 3-column layout */}
+        {activeTab === 'Command' && (
+          <main style={{
+            padding: '1rem',
+            display: 'grid',
+            gridTemplateColumns: '3fr 6fr 3fr',
+            gap: '1rem',
+            height: '100%',
+            overflow: 'hidden',
+          }}>
+            <MortalsPanel
+              mortals={mortals}
+              selected={selectedMortal}
+              stability={world?.stability ?? 80}
+              faith={world?.faith ?? 60}
+              onSelect={setSelectedMortal}
+            />
+            <ActionGrid
+              selectedMortal={selectedMortal}
+              activeDeity={activeDeity}
+              mortals={mortals}
+              onAction={divineAction}
+              onTick={doTick}
+              loading={loading}
+              onError={setError}
+            />
+            <ChroniclePanel
+              feed={feed}
+              deities={deities}
+              activeDeity={activeDeity}
+              onSelectDeity={setActiveDeity}
+              onDecree={handleDecree}
+            />
+          </main>
+        )}
+
+        {/* Pantheon tab */}
+        {activeTab === 'Pantheon' && (
+          <PantheonView deities={deities} activeDeity={activeDeity} onSelect={setActiveDeity} />
+        )}
+      </div>
 
       {/* Mobile bottom nav */}
       <nav className="mobile-nav" style={{
@@ -81,19 +118,18 @@ export default function App() {
         background: 'rgba(12,14,18,0.2)', backdropFilter: 'blur(24px)',
         borderTop: '1px solid var(--glass-stroke)',
       }}>
-        {[
-          { icon: 'dashboard', label: 'Dashboard' },
-          { icon: 'group', label: 'Mortals' },
-          { icon: 'terminal', label: 'Command', active: true },
-          { icon: 'account_balance', label: 'Pantheon' },
-        ].map(item => (
-          <button key={item.label} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: item.active ? 'var(--primary-fixed-dim)' : 'var(--outline)',
-          }}>
-            <span className="material-symbols-outlined">{item.icon}</span>
-            <span style={{ fontSize: '10px', fontFamily: 'Inter', fontWeight: 500 }}>{item.label}</span>
+        {(['Dashboard', 'Mortals', 'Command', 'Pantheon'] as Tab[]).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: activeTab === tab ? 'var(--primary-fixed-dim)' : 'var(--outline)',
+            }}
+          >
+            <span className="material-symbols-outlined">{TAB_ICONS[tab]}</span>
+            <span style={{ fontSize: '10px', fontFamily: 'Inter', fontWeight: 500 }}>{tab}</span>
           </button>
         ))}
       </nav>

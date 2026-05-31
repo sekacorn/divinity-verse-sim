@@ -17,6 +17,7 @@ export interface MortalNeeds {
 export interface Mortal {
   name: string
   archetype: string
+  traits: string[]
   location: string
   needs: MortalNeeds
   alive: boolean
