@@ -47,7 +47,7 @@ def create_runtime(base_dir: str) -> SimulationRuntime:
     pantheon = Pantheon(str(Path(base_dir) / "contributors"))
     pantheon.load_all()
     if not pantheon.list_deities():
-        pantheon.add(Deity(name="Average Diety The Corn", title="The Architect", domain="knowledge"))
+        pantheon.add(Deity(name="Corn", title="The Architect", domain="knowledge"))
     runtime = SimulationRuntime(
         world=world,
         clock=clock,

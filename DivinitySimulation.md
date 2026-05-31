@@ -183,7 +183,7 @@ Deity(name, title, domain, divine_energy=100, max_energy=100, color="white")
 
 ### `deities/pantheon.py` — Pantheon
 
-Loads all `contributors/*.json` at startup. Skips files where `name == "YourNameHere"`. Falls back to creating `"Average Diety The Corn"` (domain=knowledge) if no contributor files exist.
+Loads all `contributors/*.json` at startup. Skips files where `name == "YourNameHere"`. Falls back to creating `"Corn"` (title: "The Architect", domain=knowledge) if no contributor files exist.
 
 Methods: `load_all()`, `get(name)`, `add(deity)`, `list_deities()`, `tick_restore()` (+5 energy to all)
 
