@@ -8,6 +8,7 @@ A multi-agent god-game where mortal villagers are LLM-driven agents with persist
 |---|---|
 | ![screenshot-1](./screenshot-1.png) | ![screenshot-2](./screenshot-2.png) |
 | ![screenshot-3](./screenshot-3.png) | ![screenshot-4](./screenshot-4.png) |
+| ![screenshot-5](./screenshot-5.png) | ![screenshot-6](./screenshot-6.png) |
 
 ---
 
